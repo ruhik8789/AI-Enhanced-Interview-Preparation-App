@@ -2,12 +2,15 @@ import React, { useState } from "react";
 
 const App = () => {
   const [input, setInput] = useState("");
-  const [response, setResponse] = useState("");
+  // const [response, setResponse] = useState("");
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const askAI = async () => {
     if (!input.trim()) return;
     setLoading(true);
+    const userMessage = { role: "user", content: input };
+    setMessages((prev) => [...prev, userMessage]);
 
     try {
       const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -18,7 +21,19 @@ const App = () => {
         },
         body: JSON.stringify({
           model: "openai/gpt-4o-mini",
-          messages: [{ role: "user", content: input }],
+          messages: [
+            {
+              role: "system",
+              content: `
+You are a frontend technical interviewer.
+Ask ONLY ONE question at a time.
+Wait for user's answer before asking next question.
+Keep responses short.
+`,
+            },
+            ...messages,
+            userMessage,
+          ],
         }),
       });
 
@@ -26,6 +41,11 @@ const App = () => {
 
       const data = await res.json();
       setLoading(false);
+      const aiMessage = {
+        role: "assistant",
+        content: data.choices[0].message.content,
+      };
+      setMessages((prev) => [...prev, aiMessage]);
       setResponse(data.choices[0].message.content);
     } catch (error) {
       setLoading(false);
@@ -35,17 +55,26 @@ const App = () => {
     }
   };
   return (
-    <div>
-      <h2>AI Interview App</h2>
+    <div className="parentDiv">
+      <h2 className="marginLeft8EM">AI Interview App</h2>
       <input
-        className="padding"
+        className="padding marginLeft8EM"
         value={input}
         onChange={(e) => setInput(e.target.value)}
       />
       <button className="padding marginLeft" disbaled={loading} onClick={askAI}>
         {loading ? "Loading..." : "Ask AI"}
       </button>
-      <p>{response}</p>
+      <div className="chat-container">
+        {messages.map((message, index) => (
+          <p
+            key={index}
+            className={message.role === "user" ? "user-msg" : "ai-msg"}
+          >
+            {message.content}
+          </p>
+        ))}
+      </div>
     </div>
   );
 };
