@@ -1,16 +1,27 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const App = () => {
   const [input, setInput] = useState("");
-  // const [response, setResponse] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const bottomRef = React.useRef(null);
+
+  useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({
+        behavior: "smooth",
+      });
+    }
+    console.log("Bottom ref:", bottomRef);
+    console.log("Messages updated:", messages);
+  }, [messages]);
 
   const askAI = async () => {
     if (!input.trim()) return;
     setLoading(true);
     const userMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
+    setInput("");
 
     try {
       const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -55,25 +66,36 @@ Keep responses short.
     }
   };
   return (
-    <div className="parentDiv">
-      <h2 className="marginLeft8EM">AI Interview App</h2>
-      <input
-        className="padding marginLeft8EM"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-      />
-      <button className="padding marginLeft" disbaled={loading} onClick={askAI}>
-        {loading ? "Loading..." : "Ask AI"}
-      </button>
-      <div className="chat-container">
-        {messages.map((message, index) => (
-          <p
-            key={index}
-            className={message.role === "user" ? "user-msg" : "ai-msg"}
-          >
-            {message.content}
-          </p>
-        ))}
+    <div className="app-container">
+      <div className="chat-card">
+        <div className="header">
+          <h2>AI Interview App</h2>
+        </div>
+
+        <div className="chat-container">
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={
+                message.role === "user" ? "message user-msg" : "message ai-msg"
+              }
+            >
+              {message.content}
+            </div>
+          ))}
+          <div ref={bottomRef}></div>
+        </div>
+
+        <div className="input-section">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type your answer..."
+          />
+          <button disabled={loading} onClick={askAI}>
+            {loading ? "..." : "Send"}
+          </button>
+        </div>
       </div>
     </div>
   );
